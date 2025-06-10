@@ -29,7 +29,7 @@ namespace TodoList
             try
             {
                 Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS",
-                    "C:\\Users\\Student\\source\\repos\\TodoList\\TodoList\\todo-a881c-firebase-adminsdk-fbsvc-56f93b1f29.json");
+                    "C:\\Users\\B-ZONE\\Desktop\\TodoListCloude\\TodoList\\todo-a881c-firebase-adminsdk-fbsvc-a5204aabdd.json");
 
                 if (FirebaseApp.DefaultInstance == null)
                 {
@@ -62,7 +62,7 @@ namespace TodoList
                             InitializeFirebase();
                         }
 
-                        var todoWindow = new TodoWindow( userId);
+                        var todoWindow = new TodoWindow(userId);
                         todoWindow.Show();
                         this.Close();
                         return true;
@@ -84,7 +84,7 @@ namespace TodoList
                 string userId = await LoginUser(emailTextBox.Text, passwordBox.Password);
                 SaveUserId(userId);
 
-                var todoWindow = new TodoWindow( userId);
+                var todoWindow = new TodoWindow(userId);
                 todoWindow.Show();
                 this.Close();
             }

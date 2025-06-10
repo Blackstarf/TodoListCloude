@@ -1,21 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Google.Cloud.Firestore;
+﻿using Google.Cloud.Firestore;
 using Microsoft.Data.Sqlite;
 
 namespace TodoList
 {
     public class SqliteDataService
     {
-        private readonly string _connectionString;
+        public static string _connectionString;
 
         public SqliteDataService()
         {
-            _connectionString = $"Data Source={"C:\\Users\\Student\\source\\repos\\TodoList\\TodoList\\bin\\Debug\\TaskBase.db"}";
+            _connectionString = $"Data Source={"C:\\Users\\B-ZONE\\Desktop\\TodoListCloude\\TodoList\\bin\\Debug\\TaskBase.db"}";
 
             InitializeDatabase();
         }
@@ -35,7 +29,7 @@ namespace TodoList
 
             CREATE TABLE IF NOT EXISTS Tasks (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                Title TEXT NOT NULL,
+                Name TEXT NOT NULL,
                 Description TEXT,
                 IsDone INTEGER DEFAULT 0,
                 Deadline TEXT,
@@ -64,13 +58,16 @@ namespace TodoList
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
+                string createdAtString = reader.GetString(4); // Get the raw string
+                string dateTimeString = createdAtString.Replace("Timestamp:", "").Trim();
+                DateTime dateTime = DateTime.Parse(dateTimeString, null, System.Globalization.DateTimeStyles.RoundtripKind); // Parse with UTC awareness
                 tasks.Add(new TodoItem
                 {
-                    Id = reader.GetInt32(0),
+                    Id = reader.GetString(0),
                     Title = reader.GetString(1),
                     Description = reader.IsDBNull(2) ? "" : reader.GetString(2),
                     IsComplete = reader.GetBoolean(3),
-                    Deadline = DateTime.Parse(reader.GetString(4)),
+                    CreatedAt = Timestamp.FromDateTime(dateTime.ToUniversalTime()), // Ensure UTC
                     FirebaseId = reader.IsDBNull(5) ? null : reader.GetString(5)
                 });
             }
@@ -84,17 +81,18 @@ namespace TodoList
 
             var command = connection.CreateCommand();
             command.CommandText = @"
-            INSERT INTO Tasks (Title, Description, IsDone, Deadline, FirebaseId)
-            VALUES ($title, $desc, $done, $deadline, $firebaseId)";
+    INSERT INTO Tasks (Name, Description, IsDone, Deadline, FirebaseId)
+    VALUES ($name, $desc, $done, $deadline, $firebaseId);
+    SELECT last_insert_rowid();";
 
-            command.Parameters.AddWithValue("$title", task.Title);
+            command.Parameters.AddWithValue("$name", task.Title);
             command.Parameters.AddWithValue("$desc", task.Description ?? (object)DBNull.Value);
             command.Parameters.AddWithValue("$done", task.IsComplete ? 1 : 0);
-            command.Parameters.AddWithValue("$deadline", task.Deadline.ToString("O"));
+            command.Parameters.AddWithValue("$deadline", task.CreatedAt.ToString());
             command.Parameters.AddWithValue("$firebaseId", task.FirebaseId ?? (object)DBNull.Value);
 
-            command.ExecuteNonQuery();
-            task.Id = (int)connection.LastInsertRowId;
+            // Получаем ID последней вставленной записи
+            task.Id = command.ExecuteScalar().ToString();
         }
 
         public void UpdateTask(TodoItem task)
@@ -105,7 +103,7 @@ namespace TodoList
             var command = connection.CreateCommand();
             command.CommandText = @"
             UPDATE Tasks 
-            SET Title = $title, 
+            SET Name = $name, 
                 Description = $desc, 
                 IsDone = $done, 
                 Deadline = $deadline, 
@@ -113,10 +111,10 @@ namespace TodoList
             WHERE Id = $id";
 
             command.Parameters.AddWithValue("$id", task.Id);
-            command.Parameters.AddWithValue("$title", task.Title);
+            command.Parameters.AddWithValue("$name", task.Title);
             command.Parameters.AddWithValue("$desc", task.Description ?? (object)DBNull.Value);
             command.Parameters.AddWithValue("$done", task.IsComplete ? 1 : 0);
-            command.Parameters.AddWithValue("$deadline", task.Deadline.ToString("O"));
+            command.Parameters.AddWithValue("$deadline", task.CreatedAt.ToString());
             command.Parameters.AddWithValue("$firebaseId", task.FirebaseId ?? (object)DBNull.Value);
 
             command.ExecuteNonQuery();
@@ -155,7 +153,7 @@ namespace TodoList
             {
                 tags.Add(new Tag
                 {
-                    Id = reader.GetInt32(0),
+                    Id = reader.GetString(0),
                     Name = reader.GetString(1)
                 });
             }
@@ -168,11 +166,13 @@ namespace TodoList
             connection.Open();
 
             var command = connection.CreateCommand();
-            command.CommandText = "INSERT INTO Tags (Name) VALUES ($name)";
+            command.CommandText = @"
+    INSERT INTO Tags (Name) VALUES ($name);
+    SELECT last_insert_rowid();";
             command.Parameters.AddWithValue("$name", tag.Name);
 
-            command.ExecuteNonQuery();
-            tag.Id = (int)connection.LastInsertRowId;
+            // Получаем ID последней вставленной записи
+            tag.Id = command.ExecuteScalar().ToString();
         }
 
         public void AssignTag(int taskId, int tagId)
@@ -227,13 +227,16 @@ namespace TodoList
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
+                string createdAtString = reader.GetString(4); // Get the raw string
+                string dateTimeString = createdAtString.Replace("Timestamp:", "").Trim();
+                DateTime dateTime = DateTime.Parse(dateTimeString, null, System.Globalization.DateTimeStyles.RoundtripKind);
                 tasks.Add(new TodoItem
                 {
-                    Id = reader.GetInt32(0),
+                    Id = reader.GetString(0),
                     Title = reader.GetString(1),
                     Description = reader.IsDBNull(2) ? "" : reader.GetString(2),
                     IsComplete = reader.GetBoolean(3),
-                    Deadline = DateTime.Parse(reader.GetString(4)),
+                    CreatedAt = Timestamp.FromDateTime(dateTime.ToUniversalTime()), // Ensure UTC
                     FirebaseId = null
                 });
             }

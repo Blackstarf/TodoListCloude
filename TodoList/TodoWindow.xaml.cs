@@ -31,6 +31,7 @@ namespace TodoList
             InitializeComponent();
             this.currentUserId = userId;
             this.db = MainWindow.db;
+            _localDb = new SqliteDataService(); // Initialize _localDb
             LoadData();
         }
 
@@ -90,6 +91,14 @@ namespace TodoList
                 LoadFromLocalDb();
             }
         }
+        private Tag ConvertFirebaseToLocalTag(DocumentSnapshot doc)
+        {
+            return new Tag
+            {
+                Id = doc.Id,
+                Name = doc.GetValue<string>("Name")
+            };
+        }
         private void LoadFromLocalDb()
         {
             todoItems = _localDb.GetTasks();
@@ -114,7 +123,7 @@ namespace TodoList
                 {
                     // Обновление существующей задачи
                     GetUserTasksCollection().Document(task.FirebaseId)
-                        .SetAsync(ConvertLocalToFirebaseTask(task), SetOptions.Merge);
+                        .SetAsync(ConvertLocalToFirebaseTask(task), SetOptions.MergeAll);
                 }
             }
         }
@@ -263,39 +272,65 @@ namespace TodoList
 
         private async void ActionButton_Click(object sender, RoutedEventArgs e)
         {
-            var newTask = new TodoItem
+            if (currentEditItem == null)
             {
-                Title = taskTitleTextBox.Text,
-                Description = taskDescriptionTextBox.Text,
-                IsComplete = false,
-                CreatedAt = DateTime.Now
-            };
+                // If not editing, treat as adding a new task
+                var newTask = new TodoItem
+                {
+                    Title = taskTitleTextBox.Text,
+                    Description = taskDescriptionTextBox.Text,
+                    IsComplete = false,
+                    CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow)
+                };
 
-            if (_isOnline)
-            {
-                // Работа с Firebase
-                var firebaseTask = ConvertLocalToFirebaseTask(newTask);
-                var docRef = await GetUserTasksCollection().AddAsync(firebaseTask);
-                newTask.FirebaseId = docRef.Id;
+                if (_isOnline)
+                {
+                    var firebaseTask = ConvertLocalToFirebaseTask(newTask);
+                    var docRef = await GetUserTasksCollection().AddAsync(firebaseTask);
+                    newTask.FirebaseId = docRef.Id;
+                    newTask.Id = docRef.Id;
+                }
+                else
+                {
+                    _localDb.AddTask(newTask);
+                }
+
+                todoItems.Add(newTask);
             }
             else
             {
-                // Сохранение в локальную БД
-                _localDb.AddTask(newTask);
+                // Update the existing task
+                currentEditItem.Title = taskTitleTextBox.Text;
+                currentEditItem.Description = taskDescriptionTextBox.Text;
+
+                if (_isOnline)
+                {
+                    var firebaseTask = ConvertLocalToFirebaseTask(currentEditItem);
+                    await GetUserTasksCollection().Document(currentEditItem.Id)
+                        .SetAsync(firebaseTask, SetOptions.MergeAll);
+                }
+                else
+                {
+                    _localDb.UpdateTask(currentEditItem);
+                }
+
+                // Clear the edit mode
+                currentEditItem = null;
+                actionButton.Content = "Добавить задачу"; // Reset button text
             }
 
-            todoItems.Add(newTask);
             UpdateUI();
         }
         private TodoItem ConvertFirebaseToLocalTask(DocumentSnapshot doc)
         {
             return new TodoItem
             {
+                Id = doc.Id, // Set Id from document ID
                 FirebaseId = doc.Id,
                 Title = doc.GetValue<string>("Title"),
                 Description = doc.GetValue<string>("Description"),
                 IsComplete = doc.GetValue<bool>("IsDone"),
-                CreatedAt = doc.GetValue<Timestamp>("CreatedAt").ToDateTime()
+                CreatedAt = Timestamp.FromDateTime(doc.GetValue<Timestamp>("CreatedAt").ToDateTime())
             };
         }
         private Dictionary<string, object> ConvertLocalToFirebaseTask(TodoItem task)
@@ -305,7 +340,7 @@ namespace TodoList
             { "Title", task.Title },
             { "Description", task.Description },
             { "IsDone", task.IsComplete },
-            { "CreatedAt", Timestamp.FromDateTime(task.CreatedAt) },
+            { "CreatedAt", task.CreatedAt },
             { "TagIds", task.TagIds }
         };
         }
@@ -321,32 +356,6 @@ namespace TodoList
             });
         }
 
-        private async Task AddTodo(string title, string description)
-        {
-            var tasksCollection = GetUserTasksCollection();
-            var newTask = new Dictionary<string, object>
-    {
-        { "Title", title },
-        { "Description", description ?? string.Empty },
-        { "IsComplete", false },
-        { "CreatedAt", FieldValue.ServerTimestamp },
-        { "TagIds", new List<string>() } // Добавляем инициализацию поля
-    };
-
-            await tasksCollection.AddAsync(newTask);
-        }
-
-        private async Task UpdateTodo(string id, string title, string description)
-        {
-            // Используем подколлекцию Tasks
-            DocumentReference docRef = GetUserTasksCollection().Document(id);
-            await docRef.UpdateAsync(new Dictionary<string, object>
-    {
-        { "Title", title },
-        { "Description", description ?? string.Empty }
-    });
-        }
-
         private async void CheckBox_Checked(object sender, RoutedEventArgs e)
         {
             var checkBox = (CheckBox)sender;
@@ -355,6 +364,13 @@ namespace TodoList
             try
             {
                 DocumentReference docRef = GetUserTasksCollection().Document(todoItem.Id);
+                var snapshot = await docRef.GetSnapshotAsync();
+                if (!snapshot.Exists)
+                {
+                    MessageBox.Show($"Документ с ID {todoItem.Id} не найден в Firestore.");
+                    checkBox.IsChecked = false;
+                    return;
+                }
                 await docRef.UpdateAsync("IsComplete", true);
                 todoItem.IsComplete = true;
             }
@@ -373,6 +389,13 @@ namespace TodoList
             try
             {
                 DocumentReference docRef = GetUserTasksCollection().Document(todoItem.Id);
+                var snapshot = await docRef.GetSnapshotAsync();
+                if (!snapshot.Exists)
+                {
+                    MessageBox.Show($"Документ с ID {todoItem.Id} не найден в Firestore.");
+                    checkBox.IsChecked = true;
+                    return;
+                }
                 await docRef.UpdateAsync("IsComplete", false);
                 todoItem.IsComplete = false;
             }
@@ -413,43 +436,5 @@ namespace TodoList
             }
         }
 
-    }
-
-
-    [FirestoreData]
-    public class Tag
-    {
-        [FirestoreProperty]
-        public string Name { get; set; }
-        public string Id { get; set; }
-    }
-
-    [FirestoreData]
-    public class TodoItem
-    {
-        public int Id { get; set; }  // Локальный ID
-        public string FirebaseId { get; set; } // ID в Firebase
-        [FirestoreProperty]
-        public string Title { get; set; }
-
-        [FirestoreProperty]
-        public string Description { get; set; }
-
-        [FirestoreProperty]
-        public bool IsComplete { get; set; }
-
-        [FirestoreProperty]
-        public Timestamp CreatedAt { get; set; }
-        public List<string> TagIds { get; set; } = new List<string>();
-    }
-
-    [FirestoreData]
-    public class TaskTag
-    {
-        public string FirebaseId { get; set; } // ID в Firebase
-        public string TaskId { get; set; }
-        public string TagId { get; set; }
-        public string UserId { get; set; }
-        public string Id { get; set; }
     }
 }
