@@ -120,24 +120,36 @@ namespace TodoList
             command.ExecuteNonQuery();
         }
 
-        public void DeleteTask(int id)
+        public void DeleteTask(string id)
         {
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
-
-            // Удаляем связанные теги
-            var deleteTagsCommand = connection.CreateCommand();
-            deleteTagsCommand.CommandText = "DELETE FROM TasksTag WHERE TaskId = $id";
-            deleteTagsCommand.Parameters.AddWithValue("$id", id);
-            deleteTagsCommand.ExecuteNonQuery();
-
-            // Удаляем саму задачу
-            var deleteTaskCommand = connection.CreateCommand();
-            deleteTaskCommand.CommandText = "DELETE FROM Tasks WHERE Id = $id";
-            deleteTaskCommand.Parameters.AddWithValue("$id", id);
-            deleteTaskCommand.ExecuteNonQuery();
+            var command = connection.CreateCommand();
+            command.CommandText = "DELETE FROM Tasks WHERE Id = @id";
+            command.Parameters.AddWithValue("@id", id);
+            command.ExecuteNonQuery();
+        }
+        public void DeleteAllTasks()
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+            var command = connection.CreateCommand();
+            command.CommandText = "DELETE FROM Tasks";
+            command.ExecuteNonQuery();
+            command.CommandText = "DELETE FROM TasksTag"; // Remove related tags
+            command.ExecuteNonQuery();
         }
 
+        public void DeleteAllTags()
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+            var command = connection.CreateCommand();
+            command.CommandText = "DELETE FROM Tags";
+            command.ExecuteNonQuery();
+            command.CommandText = "DELETE FROM TasksTag"; // Remove related task-tag links
+            command.ExecuteNonQuery();
+        }
         public List<Tag> GetTags()
         {
             var tags = new List<Tag>();
@@ -241,6 +253,22 @@ namespace TodoList
                 });
             }
             return tasks;
+        }
+        public void UpdateTag(Tag tag)
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            var command = connection.CreateCommand();
+            command.CommandText = @"
+        UPDATE Tags 
+        SET Name = $name
+        WHERE Id = $id";
+
+            command.Parameters.AddWithValue("$id", tag.Id);
+            command.Parameters.AddWithValue("$name", tag.Name);
+
+            command.ExecuteNonQuery();
         }
     }
 }

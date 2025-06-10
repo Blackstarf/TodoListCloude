@@ -14,6 +14,7 @@ namespace TodoList
         private List<Tag> tags = new List<Tag>();
         private bool _isOnline = CheckInternetConnection();
         private readonly SqliteDataService _localDb;
+
         // Для работы с тегами
         private CollectionReference GetUserTagsCollection()
             => db.Collection("users").Document(currentUserId).Collection("Tags");
@@ -39,7 +40,6 @@ namespace TodoList
         {
             try
             {
-                // Используем подколлекцию Tasks текущего пользователя
                 var tasksCollection = GetUserTasksCollection();
                 var snapshot = await tasksCollection.GetSnapshotAsync();
 
@@ -50,6 +50,7 @@ namespace TodoList
                     todo.Id = document.Id;
                     todo.TagIds = document.GetValue<List<string>>("TagIds") ?? new List<string>();
                     todoItems.Add(todo);
+                    Console.WriteLine($"Loaded task: {todo.Title}"); // Debug output
                 }
 
                 todoListView.ItemsSource = null;
@@ -60,6 +61,7 @@ namespace TodoList
                 MessageBox.Show($"Ошибка загрузки задач: {ex.Message}");
             }
         }
+
         private async void LoadData()
         {
             if (_isOnline)
@@ -72,25 +74,34 @@ namespace TodoList
                 LoadFromLocalDb();
             }
         }
+
         private async Task LoadFromFirebase()
         {
             try
             {
-                // Загрузка данных из Firebase
                 var tasksSnapshot = await GetUserTasksCollection().GetSnapshotAsync();
                 todoItems = tasksSnapshot.Documents.Select(ConvertFirebaseToLocalTask).ToList();
 
                 var tagsSnapshot = await GetUserTagsCollection().GetSnapshotAsync();
                 tags = tagsSnapshot.Documents.Select(ConvertFirebaseToLocalTag).ToList();
 
+                if (_isOnline)
+                {
+                    _localDb.DeleteAllTasks();
+                    _localDb.DeleteAllTags();
+                }
+
+                await SaveFirebaseDataToLocal(todoItems, tags);
                 UpdateUI();
             }
-            catch
+            catch (Exception ex)
             {
+                MessageBox.Show($"Error loading from Firebase: {ex.Message}\nStackTrace: {ex.StackTrace}");
                 _isOnline = false;
                 LoadFromLocalDb();
             }
         }
+
         private Tag ConvertFirebaseToLocalTag(DocumentSnapshot doc)
         {
             return new Tag
@@ -99,21 +110,22 @@ namespace TodoList
                 Name = doc.GetValue<string>("Name")
             };
         }
+
         private void LoadFromLocalDb()
         {
             todoItems = _localDb.GetTasks();
             tags = _localDb.GetTags();
             UpdateUI();
+            Console.WriteLine($"Loaded {todoItems.Count} tasks from local DB"); // Debug output
         }
+
         private void SyncLocalWithFirebase()
         {
-            // Синхронизация локальных изменений с Firebase
             var pendingTasks = _localDb.GetPendingSyncTasks();
             foreach (var task in pendingTasks)
             {
                 if (task.FirebaseId == null)
                 {
-                    // Создание новой задачи в Firebase
                     var firebaseTask = ConvertLocalToFirebaseTask(task);
                     var docRef = GetUserTasksCollection().AddAsync(firebaseTask).Result;
                     task.FirebaseId = docRef.Id;
@@ -121,12 +133,12 @@ namespace TodoList
                 }
                 else
                 {
-                    // Обновление существующей задачи
                     GetUserTasksCollection().Document(task.FirebaseId)
                         .SetAsync(ConvertLocalToFirebaseTask(task), SetOptions.MergeAll);
                 }
             }
         }
+
         private async Task LoadTags()
         {
             try
@@ -161,11 +173,7 @@ namespace TodoList
 
             try
             {
-                var tag = new Dictionary<string, object>
-        {
-            { "Name", tagNameTextBox.Text }
-        };
-
+                var tag = new Dictionary<string, object> { { "Name", tagNameTextBox.Text } };
                 await GetUserTagsCollection().AddAsync(tag);
                 tagNameTextBox.Clear();
                 await LoadTags();
@@ -190,10 +198,10 @@ namespace TodoList
             try
             {
                 var taskTag = new Dictionary<string, object>
-        {
-            { "TaskId", selectedTask.Id },
-            { "TagId", selectedTag.Id }
-        };
+                {
+                    { "TaskId", selectedTask.Id },
+                    { "TagId", selectedTag.Id }
+                };
 
                 await GetUserTaskTagCollection().AddAsync(taskTag);
 
@@ -211,6 +219,7 @@ namespace TodoList
                 MessageBox.Show($"Ошибка назначения тега: {ex.Message}");
             }
         }
+
         private async void ShowTaggedTasksButton_Click(object sender, RoutedEventArgs e)
         {
             if (tagsListBox.SelectedItem == null)
@@ -223,7 +232,6 @@ namespace TodoList
 
             try
             {
-                // Получаем все связи задача-тег для выбранного тега
                 Query query = db.Collection("taskTags")
                     .WhereEqualTo("TagId", selectedTag.Id)
                     .WhereEqualTo("UserId", currentUserId);
@@ -232,8 +240,16 @@ namespace TodoList
 
                 var taskIds = snapshot.Documents.Select(d => d.GetValue<string>("TaskId")).ToList();
 
-                // Получаем задачи по найденным ID
-                var tasksQuery = db.Collection("todos")
+                if (taskIds.Count == 0)
+                {
+                    MessageBox.Show("Нет задач с выбранным тегом.");
+                    todoItems.Clear();
+                    todoListView.ItemsSource = null;
+                    todoListView.ItemsSource = todoItems;
+                    return;
+                }
+
+                var tasksQuery = db.Collection("Tasks")
                     .WhereIn(FieldPath.DocumentId, taskIds);
 
                 QuerySnapshot tasksSnapshot = await tasksQuery.GetSnapshotAsync();
@@ -254,19 +270,15 @@ namespace TodoList
                 MessageBox.Show($"Ошибка фильтрации задач: {ex.Message}");
             }
         }
+
         private void EditButton_Click(object sender, RoutedEventArgs e)
         {
             var button = (Button)sender;
             currentEditItem = (TodoItem)button.DataContext;
 
-            // Включаем режим редактирования
             editModeCheckBox.IsChecked = true;
-
-            // Заполняем поля данными выбранной задачи
             taskTitleTextBox.Text = currentEditItem.Title;
             taskDescriptionTextBox.Text = currentEditItem.Description;
-
-            // Меняем текст кнопки
             actionButton.Content = "Сохранить изменения";
         }
 
@@ -274,7 +286,6 @@ namespace TodoList
         {
             if (currentEditItem == null)
             {
-                // If not editing, treat as adding a new task
                 var newTask = new TodoItem
                 {
                     Title = taskTitleTextBox.Text,
@@ -289,6 +300,7 @@ namespace TodoList
                     var docRef = await GetUserTasksCollection().AddAsync(firebaseTask);
                     newTask.FirebaseId = docRef.Id;
                     newTask.Id = docRef.Id;
+                    _localDb.AddTask(newTask);
                 }
                 else
                 {
@@ -299,7 +311,6 @@ namespace TodoList
             }
             else
             {
-                // Update the existing task
                 currentEditItem.Title = taskTitleTextBox.Text;
                 currentEditItem.Description = taskDescriptionTextBox.Text;
 
@@ -308,49 +319,92 @@ namespace TodoList
                     var firebaseTask = ConvertLocalToFirebaseTask(currentEditItem);
                     await GetUserTasksCollection().Document(currentEditItem.Id)
                         .SetAsync(firebaseTask, SetOptions.MergeAll);
+                    _localDb.UpdateTask(currentEditItem);
                 }
                 else
                 {
                     _localDb.UpdateTask(currentEditItem);
                 }
 
-                // Clear the edit mode
                 currentEditItem = null;
-                actionButton.Content = "Добавить задачу"; // Reset button text
+                actionButton.Content = "Добавить задачу";
             }
 
             UpdateUI();
         }
+
+        private async Task SaveFirebaseDataToLocal(List<TodoItem> firebaseTasks, List<Tag> firebaseTags)
+        {
+            try
+            {
+                foreach (var task in firebaseTasks)
+                {
+                    var existingTask = _localDb.GetTasks().FirstOrDefault(t => t.FirebaseId == task.Id);
+
+                    if (existingTask == null)
+                    {
+                        task.FirebaseId = task.Id;
+                        _localDb.AddTask(task);
+                    }
+                    else
+                    {
+                        task.Id = existingTask.Id;
+                        task.FirebaseId = task.Id;
+                        _localDb.UpdateTask(task);
+                    }
+                }
+
+                foreach (var tag in firebaseTags)
+                {
+                    var existingTag = _localDb.GetTags().FirstOrDefault(t => t.Id == tag.Id);
+
+                    if (existingTag == null)
+                    {
+                        _localDb.AddTag(tag);
+                    }
+                    else
+                    {
+                        _localDb.UpdateTag(tag);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при сохранении данных в локальную БД: {ex.Message}");
+            }
+        }
+
         private TodoItem ConvertFirebaseToLocalTask(DocumentSnapshot doc)
         {
             return new TodoItem
             {
-                Id = doc.Id, // Set Id from document ID
+                Id = doc.Id,
                 FirebaseId = doc.Id,
-                Title = doc.GetValue<string>("Title"),
-                Description = doc.GetValue<string>("Description"),
-                IsComplete = doc.GetValue<bool>("IsDone"),
-                CreatedAt = Timestamp.FromDateTime(doc.GetValue<Timestamp>("CreatedAt").ToDateTime())
+                Title = doc.GetValue<string>("Title") ?? "No Title",
+                Description = doc.GetValue<string>("Description") ?? "",
+                IsComplete = doc.GetValue<bool?>("IsDone") ?? false,
+                CreatedAt = doc.ContainsField("CreatedAt") ? doc.GetValue<Timestamp>("CreatedAt") : Timestamp.FromDateTime(DateTime.UtcNow)
             };
         }
+
         private Dictionary<string, object> ConvertLocalToFirebaseTask(TodoItem task)
         {
             return new Dictionary<string, object>
-        {
-            { "Title", task.Title },
-            { "Description", task.Description },
-            { "IsDone", task.IsComplete },
-            { "CreatedAt", task.CreatedAt },
-            { "TagIds", task.TagIds }
-        };
+            {
+                { "Title", task.Title },
+                { "Description", task.Description },
+                { "IsDone", task.IsComplete },
+                { "CreatedAt", task.CreatedAt },
+                { "TagIds", task.TagIds }
+            };
         }
+
         private void UpdateUI()
         {
             Dispatcher.Invoke(() =>
             {
                 todoListView.ItemsSource = null;
                 todoListView.ItemsSource = todoItems;
-
                 tagsListBox.ItemsSource = null;
                 tagsListBox.ItemsSource = tags;
             });
@@ -373,6 +427,11 @@ namespace TodoList
                 }
                 await docRef.UpdateAsync("IsComplete", true);
                 todoItem.IsComplete = true;
+
+                if (_isOnline)
+                {
+                    _localDb.UpdateTask(todoItem);
+                }
             }
             catch (Exception ex)
             {
@@ -398,6 +457,11 @@ namespace TodoList
                 }
                 await docRef.UpdateAsync("IsComplete", false);
                 todoItem.IsComplete = false;
+
+                if (_isOnline)
+                {
+                    _localDb.UpdateTask(todoItem);
+                }
             }
             catch (Exception ex)
             {
@@ -415,6 +479,11 @@ namespace TodoList
             {
                 DocumentReference docRef = GetUserTasksCollection().Document(todoItem.Id);
                 await docRef.DeleteAsync();
+
+                if (_isOnline)
+                {
+                    _localDb.DeleteTask(todoItem.Id);
+                }
                 LoadTodos();
             }
             catch (Exception ex)
@@ -422,6 +491,7 @@ namespace TodoList
                 MessageBox.Show($"Ошибка удаления задачи: {ex.Message}");
             }
         }
+
         private static bool CheckInternetConnection()
         {
             try
@@ -436,5 +506,53 @@ namespace TodoList
             }
         }
 
+        private async void SearchButton_Click(object sender, RoutedEventArgs e)
+        {
+            string searchTerm = searchTextBox.Text?.ToLower() ?? "";
+
+            if (string.IsNullOrWhiteSpace(searchTerm))
+            {
+                if (_isOnline)
+                {
+                     LoadTodos(); // Reload all tasks from Firebase
+                }
+                else
+                {
+                    todoListView.ItemsSource = null;
+                    todoListView.ItemsSource = todoItems;
+                }
+                return;
+            }
+
+            Console.WriteLine($"Searching for prefix: {searchTerm}"); // Debug output
+            Console.WriteLine($"Total tasks before filter: {todoItems.Count}"); // Debug output
+            foreach (var item in todoItems)
+            {
+                Console.WriteLine($"Task available: {item.Title} (ID: {item.Id})"); // Debug all tasks
+            }
+
+            try
+            {
+                var filteredItems = todoItems.Where(t => t.Title != null && t.Title.ToLower().StartsWith(searchTerm)).ToList();
+                Console.WriteLine($"Filtered items count: {filteredItems.Count}"); // Debug output
+                foreach (var item in filteredItems)
+                {
+                    Console.WriteLine($"Matched task: {item.Title} (ID: {item.Id})"); // Debug matched tasks
+                }
+
+                todoListView.ItemsSource = null;
+                todoListView.ItemsSource = filteredItems;
+
+                if (filteredItems.Count == 0)
+                {
+                    MessageBox.Show("Нет задач по запросу.");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка поиска: {ex.Message}");
+                Console.WriteLine($"Search error: {ex.Message}");
+            }
+        }
     }
 }

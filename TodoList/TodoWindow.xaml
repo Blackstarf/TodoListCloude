@@ -14,6 +14,15 @@
 
         <!-- Левая колонка: Работа с задачами -->
         <StackPanel Grid.Column="0" Grid.RowSpan="2" Margin="10">
+            <!-- Search Section -->
+            <StackPanel Margin="0,0,0,10">
+                <TextBox x:Name="searchTextBox" Width="200" Margin="0,0,0,5" 
+                         
+                         Style="{StaticResource InputFieldStyle}"/>
+                <Button x:Name="searchButton" Content="Search" Click="SearchButton_Click" 
+                        Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,0,10"/>
+            </StackPanel>
+
             <!-- Add/Edit Todo Section -->
             <StackPanel Margin="0,0,0,10">
                 <CheckBox x:Name="editModeCheckBox" Content="Режим редактирования" Margin="0,0,0,5"/>
