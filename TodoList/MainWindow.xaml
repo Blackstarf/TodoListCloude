@@ -1,0 +1,26 @@
+﻿<Window x:Class="TodoList.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Todo List" Height="450" Width="800">
+    <Grid>
+        <TabControl>
+            <TabItem Header="Login">
+                <StackPanel Margin="20">
+                    <TextBlock Text="Email:" Margin="0,0,0,5"/>
+                    <TextBox x:Name="emailTextBox" Margin="0,0,0,10"/>
+
+                    <TextBlock Text="Password:" Margin="0,0,0,5"/>
+                    <PasswordBox x:Name="passwordBox" Margin="0,0,0,10"/>
+
+                    <TextBlock Text="Display Name (Register only):" Margin="0,0,0,5"/>
+                    <TextBox x:Name="displayNameTextBox" Margin="0,0,0,20"/>
+
+                    <Button Content="Register" Click="RegisterButton_Click" Margin="0,0,0,10"/>
+                    <Button Content="Login" Click="LoginButton_Click"/>
+                </StackPanel>
+            </TabItem>
+
+            <!-- Add more tabs for Todo management after login -->
+        </TabControl>
+    </Grid>
+</Window>
