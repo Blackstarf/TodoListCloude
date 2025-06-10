@@ -9,7 +9,7 @@ namespace TodoList
 
         public SqliteDataService()
         {
-            _connectionString = $"Data Source={"C:\\Users\\B-ZONE\\Desktop\\TodoListCloude\\TodoList\\bin\\Debug\\TaskBase.db"}";
+            _connectionString = $"Data Source={"TaskBase.db"}";
 
             InitializeDatabase();
         }

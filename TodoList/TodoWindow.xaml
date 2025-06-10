@@ -1,104 +1,140 @@
 ﻿<Window x:Class="TodoList.TodoWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="My Todo List" Height="650" Width="1000">
-    <Grid>
+        Title="My Todo List" Height="650" Width="1000"
+        MinHeight="500" MinWidth="800"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid Style="{StaticResource WindowBackgroundStyle}">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="3*"/>
-            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="3*" MinWidth="400"/>
+            <ColumnDefinition Width="2*" MinWidth="300"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
+        <!-- Header -->
+        <Border Grid.ColumnSpan="2" Background="{StaticResource PrimaryBrush}" Padding="15">
+            <TextBlock Text="My Todo List" 
+                       Foreground="White" 
+                       FontSize="20" 
+                       FontWeight="SemiBold"
+                       HorizontalAlignment="Center"/>
+        </Border>
+
         <!-- Левая колонка: Работа с задачами -->
-        <StackPanel Grid.Column="0" Grid.RowSpan="2" Margin="10">
-            <!-- Search Section -->
-            <StackPanel Margin="0,0,0,10">
-                <TextBox x:Name="searchTextBox" Width="200" Margin="0,0,0,5" 
-                         
-                         Style="{StaticResource InputFieldStyle}"/>
-                <Button x:Name="searchButton" Content="Search" Click="SearchButton_Click" 
-                        Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,0,10"/>
+        <Border Grid.Column="0" Grid.Row="1" Margin="10" Style="{StaticResource CardStyle}">
+            <StackPanel>
+                <!-- Search Section -->
+                <StackPanel Margin="0,0,0,15">
+                    <TextBlock Text="Поиск задач:" Style="{StaticResource LabelStyle}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox x:Name="searchTextBox" Width="250" 
+                                 Style="{StaticResource InputFieldStyle}" Margin="0,0,10,0"/>
+                        <Button x:Name="searchButton" Content="Поиск" Click="SearchButton_Click" 
+                                Style="{StaticResource SecondaryButtonStyle}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Add/Edit Todo Section -->
+                <StackPanel Margin="0,0,0,20">
+                    <TextBlock Text="Добавить/редактировать задачу:" Style="{StaticResource LabelStyle}"/>
+                    <TextBox x:Name="taskTitleTextBox" Text="Название задачи" 
+                             Style="{StaticResource InputFieldStyle}"/>
+                    <TextBox x:Name="taskDescriptionTextBox" Text="Описание" AcceptsReturn="True" 
+                             Style="{StaticResource MultiLineInputStyle}"/>
+                    <Button x:Name="actionButton" Content="Добавить задачу" 
+                            Click="ActionButton_Click" Style="{StaticResource PrimaryButtonStyle}"/>
+                </StackPanel>
+
+                <!-- Todo List Section -->
+                <TextBlock Text="Список задач:" Style="{StaticResource LabelStyle}"/>
+                <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="8" Padding="1">
+                    <ListView x:Name="todoListView" Height="350">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Статус" Width="80">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsComplete}" Margin="5"
+                                                      Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked"
+                                                      HorizontalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Название" DisplayMemberBinding="{Binding Title}" Width="200"/>
+                                <GridViewColumn Header="Описание" DisplayMemberBinding="{Binding Description}" Width="300"/>
+                                <GridViewColumn Header="Действия" Width="120">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                                <Button Content="✏️" Click="EditButton_Click" Style="{StaticResource IconButtonStyle}"/>
+                                                <Button Content="❌" Click="DeleteButton_Click" Style="{StaticResource IconButtonStyle}"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </Border>
             </StackPanel>
-
-            <!-- Add/Edit Todo Section -->
-            <StackPanel Margin="0,0,0,10">
-
-                <TextBox x:Name="taskTitleTextBox" Margin="0,0,0,5" 
-                         Text="Название задачи" Style="{StaticResource InputFieldStyle}"/>
-
-                <TextBox x:Name="taskDescriptionTextBox" Margin="0,0,0,10" 
-                         Text="Описание" AcceptsReturn="True" 
-                         Style="{StaticResource MultiLineInputStyle}"/>
-
-                <Button x:Name="actionButton" Content="Добавить задачу" 
-                        Click="ActionButton_Click" Style="{StaticResource PrimaryButtonStyle}"/>
-            </StackPanel>
-
-            <!-- Todo List Section -->
-            <ListView x:Name="todoListView" Height="400">
-                <ListView.View>
-                    <GridView>
-                        <GridViewColumn Header="Status" Width="80">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <CheckBox IsChecked="{Binding IsComplete}" Margin="5"
-                                              Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn Header="Название" DisplayMemberBinding="{Binding Title}" Width="200"/>
-                        <GridViewColumn Header="Описание" DisplayMemberBinding="{Binding Description}" Width="300"/>
-                        <GridViewColumn Header="Действия" Width="150">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal">
-                                        <Button Content="✏️" Click="EditButton_Click" Style="{StaticResource IconButtonStyle}"/>
-                                        <Button Content="❌" Click="DeleteButton_Click" Style="{StaticResource IconButtonStyle}"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
-        </StackPanel>
+        </Border>
 
         <!-- Правая колонка: Управление тегами -->
-        <StackPanel Grid.Column="1" Margin="10">
-            <!-- Добавление тегов -->
-            <GroupBox Header="Управление тегами" Margin="0,0,0,10">
-                <StackPanel>
-                    <TextBox x:Name="tagNameTextBox" Margin="0,0,0,5" 
-                             Text="Новый тег" Style="{StaticResource InputFieldStyle}"/>
+        <Border Grid.Column="1" Grid.Row="1" Margin="10" Style="{StaticResource CardStyle}">
+            <StackPanel>
+                <!-- Добавление тегов -->
+                <GroupBox Header="Управление тегами" Margin="0,0,0,15">
+                    <StackPanel>
+                        <TextBlock Text="Название тега:" Style="{StaticResource LabelStyle}"/>
+                        <TextBox x:Name="tagNameTextBox" Text="Новый тег" 
+                                 Style="{StaticResource InputFieldStyle}"/>
+                        <Button Content="Добавить тег" Click="AddTagButton_Click" 
+                                Style="{StaticResource SecondaryButtonStyle}" Margin="0,10,0,0"/>
+                    </StackPanel>
+                </GroupBox>
 
-                    <Button Content="Добавить тег" Click="AddTagButton_Click" 
-                            Style="{StaticResource SecondaryButtonStyle}"/>
-                </StackPanel>
-            </GroupBox>
-
-            <!-- Список тегов -->
-            <GroupBox Header="Мои теги">
-                <StackPanel>
-                    <ListBox x:Name="tagsListBox" Height="150" Margin="0,0,0,5">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Name}" Padding="5"/>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-
-                    <Button Content="Назначить выбранному заданию" 
-                            Click="AssignTagButton_Click" Margin="0,5"
-                            Style="{StaticResource SecondaryButtonStyle}"/>
-
-                    <Button Content="Показать задания с этим тегом" 
-                            Click="ShowTaggedTasksButton_Click"
-                            Style="{StaticResource SecondaryButtonStyle}"/>
-                </StackPanel>
-            </GroupBox>
-        </StackPanel>
+                <!-- Список тегов -->
+                <GroupBox Header="Мои теги">
+                    <StackPanel>
+                        <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="8" Padding="1">
+                            <ListBox x:Name="tagsListBox" Height="150">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Padding="5" Background="Transparent" CornerRadius="4">
+                                            <TextBlock Text="{Binding Name}" Padding="5"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Margin" Value="2"/>
+                                        <Setter Property="Padding" Value="0"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter Property="Background" Value="{StaticResource PrimaryLightBrush}"/>
+                                                <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="{StaticResource PrimaryLightBrush}"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                            </ListBox>
+                        </Border>
+                        <Button Content="Назначить выбранному заданию" 
+                                Click="AssignTagButton_Click" Margin="0,10"
+                                Style="{StaticResource SecondaryButtonStyle}"/>
+                        <Button Content="Показать задания с этим тегом" 
+                                Click="ShowTaggedTasksButton_Click"
+                                Style="{StaticResource SecondaryButtonStyle}"/>
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>

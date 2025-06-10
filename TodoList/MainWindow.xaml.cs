@@ -29,7 +29,7 @@ namespace TodoList
             try
             {
                 Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS",
-                    "C:\\Users\\B-ZONE\\Desktop\\TodoListCloude\\TodoList\\todo-a881c-firebase-adminsdk-fbsvc-a5204aabdd.json");
+                    "D:\\Some projects\\TodoListCloude\\TodoList\\todo-a881c-firebase-adminsdk-fbsvc-a5204aabdd.json");
 
                 if (FirebaseApp.DefaultInstance == null)
                 {
