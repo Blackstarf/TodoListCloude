@@ -1,0 +1,5 @@
+﻿<application xmlns="urn:schemas-microsoft-com:asm.v3">
+    <windowsSettings>
+        <toastCapable xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings" value="true"/>
+    </windowsSettings>
+</application>

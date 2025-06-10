@@ -72,6 +72,9 @@
                                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                                 <Button Content="✏️" Click="EditButton_Click" Style="{StaticResource IconButtonStyle}"/>
                                                 <Button Content="❌" Click="DeleteButton_Click" Style="{StaticResource IconButtonStyle}"/>
+                                                <Button Content="Уведомить" 
+                        Click="NotifyButton_Click" 
+                        Margin="5,0" />
                                             </StackPanel>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>

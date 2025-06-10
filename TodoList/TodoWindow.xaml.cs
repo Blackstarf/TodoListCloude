@@ -4,6 +4,10 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using Google.Cloud.Firestore;
+using System.Windows;
+using System.Drawing;
+using Microsoft.Toolkit.Uwp.Notifications;
+using Tulpep.NotificationWindow;
 
 namespace TodoList
 {
@@ -36,9 +40,24 @@ namespace TodoList
             this.db = MainWindow.db;
             _localDb = new SqliteDataService();
             _isOnline = CheckInternetConnection();
+
+
             LoadData();
         }
+        private void ShowNativeToast(string title, string message)
+        {
+            PopupNotifier popup = new PopupNotifier();
+            popup.TitleText = title;
+            popup.ContentText = message;
+            popup.Popup();
+        }
 
+        // Использование:
+        private void NotifyButton_Click(object sender, RoutedEventArgs e)
+        {
+            var todoItem = (TodoItem)((Button)sender).DataContext;
+            ShowNativeToast($"Задача: {todoItem.Title}", todoItem.Description);
+        }
         private async void LoadData()
         {
             _isOnline = CheckInternetConnection();
@@ -417,6 +436,7 @@ namespace TodoList
                 MessageBox.Show($"Ошибка загрузки тегов: {ex.Message}");
             }
         }
+
 
         private async void ShowTaggedTasksButton_Click(object sender, RoutedEventArgs e)
         {
