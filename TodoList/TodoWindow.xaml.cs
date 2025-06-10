@@ -53,9 +53,14 @@ namespace TodoList
         }
 
         // Использование:
-        private void NotifyButton_Click(object sender, RoutedEventArgs e)
+        private async void NotifyButton_Click(object sender, RoutedEventArgs e)
         {
             var todoItem = (TodoItem)((Button)sender).DataContext;
+
+            // Задержка в 10 секунд
+            await Task.Delay(10000);
+
+            // Показ уведомления после задержки
             ShowNativeToast($"Задача: {todoItem.Title}", todoItem.Description);
         }
         private async void LoadData()
