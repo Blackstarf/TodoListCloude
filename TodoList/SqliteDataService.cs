@@ -133,10 +133,9 @@ namespace TodoList
         {
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
+
             var command = connection.CreateCommand();
             command.CommandText = "DELETE FROM Tasks";
-            command.ExecuteNonQuery();
-            command.CommandText = "DELETE FROM TasksTag"; // Remove related tags
             command.ExecuteNonQuery();
         }
 
@@ -144,10 +143,9 @@ namespace TodoList
         {
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
+
             var command = connection.CreateCommand();
             command.CommandText = "DELETE FROM Tags";
-            command.ExecuteNonQuery();
-            command.CommandText = "DELETE FROM TasksTag"; // Remove related task-tag links
             command.ExecuteNonQuery();
         }
         public List<Tag> GetTags()
