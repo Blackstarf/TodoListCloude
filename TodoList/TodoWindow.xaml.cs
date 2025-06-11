@@ -1,14 +1,17 @@
-﻿using System;
+﻿using Google.Cloud.Firestore;
+using Microsoft.Toolkit.Uwp.Notifications;
+using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
-using Google.Cloud.Firestore;
 using System.Windows;
-using System.Drawing;
-using Microsoft.Toolkit.Uwp.Notifications;
-using Tulpep.NotificationWindow;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using TodoList.Services;
+using Tulpep.NotificationWindow;
+
 
 namespace TodoList
 {
@@ -21,6 +24,8 @@ namespace TodoList
         private TodoItem currentEditItem = null;
         private List<Tag> tags = new List<Tag>();
         private bool _isOnline;
+
+        private System.Windows.Point _dragStartPoint;
 
         // Для работы с тегами
         private CollectionReference GetUserTagsCollection()
@@ -60,6 +65,63 @@ namespace TodoList
         private void OnThemeChanged()
         {
             // Обновляем специфичные для окна элементы при смене темы
+        }
+        private void todoListView_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            _dragStartPoint = e.GetPosition(null);
+        }
+        private void todoListView_MouseMove(object sender, MouseEventArgs e)
+        {
+            System.Windows.Point currentPosition = e.GetPosition(null);
+            Vector diff = _dragStartPoint - currentPosition;
+
+            if (e.LeftButton == MouseButtonState.Pressed &&
+                (Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance ||
+                 Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance))
+            {
+                if (todoListView.SelectedItem == null)
+                    return;
+
+                DragDrop.DoDragDrop(todoListView, todoListView.SelectedItem, DragDropEffects.Move);
+            }
+        }
+        private void todoListView_DragOver(object sender, DragEventArgs e)
+        {
+            e.Effects = DragDropEffects.Move;
+            e.Handled = true;
+        }
+        private void todoListView_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(typeof(TodoItem)))
+            {
+                var droppedData = e.Data.GetData(typeof(TodoItem)) as TodoItem;
+                var target = GetElementUnderMouse<TodoItem>(e.OriginalSource);
+
+                if (droppedData == null || target == null || droppedData == target)
+                    return;
+
+                int removedIdx = todoItems.IndexOf(droppedData);
+                int targetIdx = todoItems.IndexOf(target);
+
+                todoItems.RemoveAt(removedIdx);
+                todoItems.Insert(targetIdx, droppedData);
+
+                UpdateUI();
+            }
+        }
+
+        private T GetElementUnderMouse<T>(object originalSource) where T : class
+        {
+            DependencyObject dep = originalSource as DependencyObject;
+            while (dep != null && !(dep is ListViewItem))
+            {
+                dep = VisualTreeHelper.GetParent(dep);
+            }
+
+            if (dep is ListViewItem item)
+                return item.DataContext as T;
+
+            return null;
         }
 
         protected override void OnClosed(EventArgs e)

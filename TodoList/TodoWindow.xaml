@@ -60,7 +60,7 @@
                 <!-- Todo List Section -->
                 <TextBlock Text="Список задач:" Style="{StaticResource LabelStyle}"/>
                 <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="1">
-                    <ListView x:Name="todoListView" Height="350">
+                    <ListView x:Name="todoListView" Height="350"  AllowDrop="True" PreviewMouseLeftButtonDown="todoListView_PreviewMouseLeftButtonDown"  MouseMove="todoListView_MouseMove"  Drop="todoListView_Drop"  DragOver="todoListView_DragOver" DisplayMemberPath="Title">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Header="Статус" Width="80">
