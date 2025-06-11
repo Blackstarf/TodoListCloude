@@ -87,9 +87,12 @@ namespace TodoList
             {
                 try
                 {
+                    await Task.Run(() => SyncLocalWithFirebase());
                     await LoadFromFirebase();
                     await SaveFirebaseDataToLocal(todoItems, tags);
-                    await Task.Run(() => SyncLocalWithFirebase());
+                    await LoadFromFirebase();
+                    await SaveFirebaseDataToLocal(todoItems, tags);
+
                 }
                 catch (Exception ex)
                 {
