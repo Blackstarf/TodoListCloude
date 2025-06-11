@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Light Theme Colors -->
+    <Color x:Key="PrimaryColor">#1976D2</Color>
+    <Color x:Key="PrimaryDarkColor">#1565C0</Color>
+    <Color x:Key="PrimaryLightColor">#E3F2FD</Color>
+    <Color x:Key="AccentColor">#82B1FF</Color>
+    <Color x:Key="WindowBackgroundLight">#FAFAFA</Color>
+    <Color x:Key="CardBackgroundLight">White</Color>
+    <Color x:Key="TextColorLight">#424242</Color>
+    <Color x:Key="SecondaryTextColorLight">#616161</Color>
+    <Color x:Key="BorderColorLight">#E0E0E0</Color>
+</ResourceDictionary>

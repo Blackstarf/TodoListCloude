@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="My Todo List" Height="650" Width="1000"
         MinHeight="500" MinWidth="800"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        x:Name="todoWindow">
 
     <Grid Style="{StaticResource WindowBackgroundStyle}">
         <Grid.ColumnDefinitions>
@@ -16,12 +17,19 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.ColumnSpan="2" Background="{StaticResource PrimaryBrush}" Padding="15">
-            <TextBlock Text="My Todo List" 
-                       Foreground="White" 
-                       FontSize="20" 
-                       FontWeight="SemiBold"
-                       HorizontalAlignment="Center"/>
+        <Border Grid.ColumnSpan="2" Background="{DynamicResource PrimaryBrush}" Padding="15">
+            <Grid>
+                <TextBlock Text="My Todo List" 
+                           Foreground="{DynamicResource TextBrush}" 
+                           FontSize="20" 
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Center"/>
+                <Button x:Name="themeToggleButton" Content="🌓" 
+                        Style="{StaticResource ThemeToggleButtonStyle}"
+                        Click="ThemeToggleButton_Click"
+                        HorizontalAlignment="Right"
+                        Foreground="{DynamicResource TextBrush}"/>
+            </Grid>
         </Border>
 
         <!-- Левая колонка: Работа с задачами -->
@@ -51,7 +59,7 @@
 
                 <!-- Todo List Section -->
                 <TextBlock Text="Список задач:" Style="{StaticResource LabelStyle}"/>
-                <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="8" Padding="1">
+                <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="1">
                     <ListView x:Name="todoListView" Height="350">
                         <ListView.View>
                             <GridView>
@@ -73,8 +81,9 @@
                                                 <Button Content="✏️" Click="EditButton_Click" Style="{StaticResource IconButtonStyle}"/>
                                                 <Button Content="❌" Click="DeleteButton_Click" Style="{StaticResource IconButtonStyle}"/>
                                                 <Button Content="Уведомить" 
-                        Click="NotifyButton_Click" 
-                        Margin="5,0" />
+                                                        Click="NotifyButton_Click" 
+                                                        Margin="5,0"
+                                                        Style="{StaticResource SecondaryButtonStyle}"/>
                                             </StackPanel>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
@@ -103,12 +112,12 @@
                 <!-- Список тегов -->
                 <GroupBox Header="Мои теги">
                     <StackPanel>
-                        <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="8" Padding="1">
+                        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="1">
                             <ListBox x:Name="tagsListBox" Height="150">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <Border Padding="5" Background="Transparent" CornerRadius="4">
-                                            <TextBlock Text="{Binding Name}" Padding="5"/>
+                                            <TextBlock Text="{Binding Name}" Padding="5" Foreground="{DynamicResource TextBrush}"/>
                                         </Border>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
@@ -116,13 +125,14 @@
                                     <Style TargetType="ListBoxItem">
                                         <Setter Property="Margin" Value="2"/>
                                         <Setter Property="Padding" Value="0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
                                         <Style.Triggers>
                                             <Trigger Property="IsSelected" Value="True">
-                                                <Setter Property="Background" Value="{StaticResource PrimaryLightBrush}"/>
-                                                <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                                                <Setter Property="Background" Value="{DynamicResource PrimaryLightBrush}"/>
+                                                <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
                                             </Trigger>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="{StaticResource PrimaryLightBrush}"/>
+                                                <Setter Property="Background" Value="{DynamicResource PrimaryLightBrush}"/>
                                             </Trigger>
                                         </Style.Triggers>
                                     </Style>

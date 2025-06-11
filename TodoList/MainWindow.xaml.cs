@@ -5,6 +5,7 @@ using FirebaseAdmin.Auth;
 using Google.Apis.Auth.OAuth2;
 using System.IO;
 using System.Text.Json;
+using TodoList.Services;
 
 namespace TodoList
 {
@@ -21,6 +22,7 @@ namespace TodoList
                 return;
             }
             InitializeComponent();
+            ThemeService.ThemeChanged += OnThemeChanged;
         }
         private void InitializeFirebase()
         {
@@ -29,7 +31,7 @@ namespace TodoList
             try
             {
                 Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS",
-                    "C:\\Users\\B-ZONE\\Desktop\\TodoListCloude\\TodoList\\todo-a881c-firebase-adminsdk-fbsvc-a5204aabdd.json");
+                    "D:\\Some projects\\TodoListCloude\\TodoList\\todo-a881c-firebase-adminsdk-fbsvc-a5204aabdd.json");
 
                 if (FirebaseApp.DefaultInstance == null)
                 {
@@ -46,6 +48,19 @@ namespace TodoList
             {
                 MessageBox.Show($"Error initializing Firebase: {ex.Message}");
             }
+        }
+        private void ThemeToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            ThemeService.ToggleTheme(); // Должен корректно переключать тему
+        }
+        private void OnThemeChanged()
+        {
+            // Обновляем специфичные для окна элементы при смене темы
+        }
+        protected override void OnClosed(EventArgs e)
+        {
+            ThemeService.ThemeChanged -= OnThemeChanged;
+            base.OnClosed(e);
         }
         private bool CheckAuth()
         {

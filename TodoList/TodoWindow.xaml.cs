@@ -8,6 +8,7 @@ using System.Windows;
 using System.Drawing;
 using Microsoft.Toolkit.Uwp.Notifications;
 using Tulpep.NotificationWindow;
+using TodoList.Services;
 
 namespace TodoList
 {
@@ -40,6 +41,7 @@ namespace TodoList
             this.db = MainWindow.db;
             _localDb = new SqliteDataService();
             _isOnline = CheckInternetConnection();
+            ThemeService.ThemeChanged += OnThemeChanged;
 
 
             LoadData();
@@ -50,6 +52,20 @@ namespace TodoList
             popup.TitleText = title;
             popup.ContentText = message;
             popup.Popup();
+        }
+        private void ThemeToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            ThemeService.ToggleTheme();
+        }
+        private void OnThemeChanged()
+        {
+            // Обновляем специфичные для окна элементы при смене темы
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            ThemeService.ThemeChanged -= OnThemeChanged;
+            base.OnClosed(e);
         }
 
         // Использование:

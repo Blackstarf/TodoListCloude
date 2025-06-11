@@ -1,7 +1,7 @@
 ﻿using Google.Cloud.Firestore;
 using Microsoft.Data.Sqlite;
 
-namespace TodoList
+namespace TodoList.Services
 {
     public class SqliteDataService
     {
