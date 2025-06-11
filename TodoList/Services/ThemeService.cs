@@ -17,26 +17,14 @@ namespace TodoList.Services
 
         public static void ToggleTheme()
         {
-            var app = Application.Current;
-            var newTheme = _isDarkTheme ? "Light" : "Dark";
-
-            // Удаляем текущую тему
-            var currentTheme = app.Resources.MergedDictionaries
-                .FirstOrDefault(d => d.Source != null &&
-                                   (d.Source.OriginalString.Contains("LightTheme.xaml") ||
-                                    d.Source.OriginalString.Contains("DarkTheme.xaml")));
-
-            if (currentTheme != null)
+            if (_isDarkTheme)
             {
-                app.Resources.MergedDictionaries.Remove(currentTheme);
+                SetLightTheme();
             }
-
-            // Добавляем новую тему
-            var newThemeUri = new Uri($"Themes/{newTheme}Theme.xaml", UriKind.Relative);
-            app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = newThemeUri });
-
-            _isDarkTheme = !_isDarkTheme;
-            ThemeChanged?.Invoke();
+            else
+            {
+                SetDarkTheme();
+            }
         }
 
         private static void SetDarkTheme()
